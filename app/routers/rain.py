@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from supabase import create_client
 import asyncio
+from typing import Optional
+from fastapi import Query
 
 SUPABASE_URL = "http://10.198.110.39:8000"
 SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q"
@@ -40,5 +42,51 @@ async def max_rain_summary():
         }
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="Query timeout")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+      
+@router.get("/forecast-timeseries")
+async def rain_forecast_timeseries(
+    station_code: Optional[str] = Query(
+        default=None,
+        description="รหัสสถานี เช่น BKN"
+    ),
+    limit: int = Query(
+        default=500,
+        ge=1,
+        le=5000,
+        description="จำนวน record สูงสุด"
+    )
+):
+    """
+    ทุก station + ทุก timestep (3 ชม.) จาก run ล่าสุด
+    สามารถ filter ตาม station_code และ limit ได้
+    """
+    try:
+        res = await asyncio.to_thread(
+            supabase.rpc("get_rain_forecast_timeseries_72h").execute
+        )
+
+        data = res.data or []
+
+        # 🔹 filter ตาม station_code
+        if station_code:
+            data = [
+                row for row in data
+                if row["station_code"] == station_code
+            ]
+
+        # 🔹 limit จำนวนข้อมูล
+        data = data[:limit]
+
+        return {
+            "run": {
+                "run_time": data[0]["model_run_time"] if data else None
+            },
+            "count": len(data),
+            "station_code": station_code,
+            "data": data
+        }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

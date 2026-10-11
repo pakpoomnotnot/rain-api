@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # คัดลอก source code
 COPY ./app ./app
+COPY ./config ./config
 
 # ประกาศ port ที่ container จะ expose
 EXPOSE 9000

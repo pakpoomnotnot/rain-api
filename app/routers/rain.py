@@ -1,14 +1,11 @@
 from fastapi import APIRouter, HTTPException
-from supabase import create_client
 import asyncio
 from typing import Optional
 from fastapi import Query
 from datetime import datetime
 
-SUPABASE_URL = "http://10.198.110.39:8000"
-SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q"
+from app.supabase_client import supabase
 
-supabase = create_client(SUPABASE_URL, SERVICE_ROLE_KEY)
 router = APIRouter(prefix="/rain", tags=["Rain"])
 
 

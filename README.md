@@ -1,26 +1,26 @@
 # Rain API
 
-REST API (FastAPI) สำหรับดึงข้อมูลปริมาณฝนจากฐานข้อมูล Supabase / PostgreSQL
-ให้บริการ 2 อย่างหลัก:
+A REST API built with FastAPI that serves rainfall data from Supabase / PostgreSQL.
+It provides two main features:
 
-1. **สรุปฝนสูงสุด** — ค่าฝนสูงสุดในช่วง 1 ชม., 3 ชม. และ 24 ชม. พร้อมชื่อสถานี
-2. **ฝนพยากรณ์ล่วงหน้า 72 ชม.** — time series ของทุกสถานี (ราย 3 ชม.) จาก model run ล่าสุด
+1. **Max rainfall summary** - the highest rainfall over the last 1, 3 and 24 hours, with station names.
+2. **72-hour rainfall forecast** - a time series for every station (3-hour steps) from the latest model run.
 
 ## Endpoints
 
-| Method | Path | คำอธิบาย |
+| Method | Path | Description |
 |---|---|---|
-| GET | `/rain/max-summary` | ค่าฝนสูงสุด 1h / 3h / 24h (เรียก RPC `get_max_rain_1h`, `get_max_rain_3h`, `get_max_rain_24h` แบบขนาน, timeout 30 วินาที) |
-| GET | `/rain/forecast-timeseries` | ฝนพยากรณ์ 72 ชม. จาก RPC `get_rain_forecast_timeseries_72h` |
+| GET | `/rain/max-summary` | Max rainfall for 1h / 3h / 24h. Calls the RPCs `get_max_rain_1h`, `get_max_rain_3h` and `get_max_rain_24h` in parallel, with a 30-second timeout. |
+| GET | `/rain/forecast-timeseries` | 72-hour rainfall forecast from the RPC `get_rain_forecast_timeseries_72h`. |
 
 ### `/rain/forecast-timeseries` query parameters
 
-| Param | Type | Default | คำอธิบาย |
+| Param | Type | Default | Description |
 |---|---|---|---|
-| `station_code` | string | – | กรองตามรหัสสถานี เช่น `BKN` |
-| `limit` | int (1–5000) | 500 | จำนวน record สูงสุด |
+| `station_code` | string | - | Filter by station code, e.g. `BKN` |
+| `limit` | int (1-5000) | 500 | Maximum number of records |
 
-ผลลัพธ์เรียงตาม `forecast_datetime` จากใหม่ไปเก่า:
+Results are sorted by `forecast_datetime`, newest first:
 
 ```json
 {
@@ -31,46 +31,48 @@ REST API (FastAPI) สำหรับดึงข้อมูลปริมา�
 }
 ```
 
-เอกสาร API แบบ interactive: `http://localhost:9000/docs`
+Interactive API docs are available at `http://localhost:9000/docs`.
 
-## โครงสร้างโปรเจกต์
+## Project structure
 
 ```
 app/
-  main.py              # สร้าง FastAPI app และ include router
-  supabase_client.py   # Supabase client (อ่านค่าจาก env)
-  routers/rain.py      # endpoints /rain/*
-  db/connection.py     # psycopg2 connection (ต่อ Postgres ตรง)
+  main.py              # Creates the FastAPI app and includes routers
+  supabase_client.py   # Supabase client (reads config from env)
+  routers/rain.py      # /rain/* endpoints
+  db/connection.py     # psycopg2 connection (direct Postgres access)
 config/
-  settings.py          # โหลด environment variables
+  settings.py          # Loads environment variables
 ```
 
-## การตั้งค่า (Environment variables)
+## Configuration (environment variables)
 
-คัดลอกไฟล์ตัวอย่างแล้วใส่ค่าจริง (`.env` ถูก ignore ไว้แล้ว ห้าม commit):
+Copy the example file and fill in real values. `.env` is git-ignored and must not be committed.
 
 ```bash
 cp .env.example .env
 ```
 
-| Variable | Required | คำอธิบาย |
+| Variable | Required | Description |
 |---|---|---|
-| `DB_HOST` | ✅ | host ของ PostgreSQL |
-| `DB_PORT` | | default `5432` |
-| `DB_NAME` | | default `postgres` |
-| `DB_USER` | | default `postgres` |
-| `DB_PASSWORD` | ✅ | รหัสผ่าน PostgreSQL |
-| `SUPABASE_URL` | ✅ | URL ของ Supabase เช่น `http://<host>:8000` |
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | service role key ของ Supabase |
+| `DB_HOST` | Yes | PostgreSQL host |
+| `DB_PORT` | No | Defaults to `5432` |
+| `DB_NAME` | No | Defaults to `postgres` |
+| `DB_USER` | No | Defaults to `postgres` |
+| `DB_PASSWORD` | Yes | PostgreSQL password |
+| `SUPABASE_URL` | Yes | Supabase URL, e.g. `http://<host>:8000` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key |
 
-## รันบนเครื่อง
+The app fails at startup with a clear error if a required variable is missing.
+
+## Running locally
 
 ```bash
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 9000
 ```
 
-## รันด้วย Docker
+## Running with Docker
 
 ```bash
 docker build -t rain-api .
